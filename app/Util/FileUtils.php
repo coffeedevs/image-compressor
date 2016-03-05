@@ -13,9 +13,6 @@ class FileUtils
 {
     public static function listarDirectoriosRuta($ruta)
     {
-        ini_set('max_execution_time', 3000); //300 seconds = 5 minutes
-        \Tinify\setKey(env('TINY_API_KEY', ''));
-
         // abrir un directorio y listarlo recursivo
         if (is_dir($ruta)) {
 
@@ -29,20 +26,20 @@ class FileUtils
                         $mime = File::mimeType($ruta . $file);
                         if ($mime == 'image/png' || $mime == 'image/jpeg') {
                             try {
-//                                $source = \Tinify\fromFile($ruta.$file);
-//                                $resized = $source->resize(array(
-//                                    "method" => "scale",
-//                                    "width" => 1920
-//                                ));
-//                                $resized->toFile($ruta.$file);
-                                    echo $ruta.$file.' OK';
+                                $source = \Tinify\fromFile($ruta.$file);
+                                $resized = $source->resize(array(
+                                    "method" => "scale",
+                                    "width" => 1920
+                                ));
+                                $resized->toFile($ruta.$file);
+                                    echo $ruta.$file.' <span style="color:#00cc00">OK</span>';
                                     flush();
                                     ob_flush();
                                     usleep(100000);
 
 
                             } catch (\Exception $ex) {
-                                echo $ruta.$file.' FAIL';
+                                echo $ruta.$file.' <span style="color:red">FAIL</span>';
                                 flush();
                                 ob_flush();
                                 usleep(100000);

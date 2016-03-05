@@ -67,18 +67,23 @@
                     <input type="text" class="form-control" id="path">
                 </div>
                 <div class="form-group">
-                    <button id="enviar" class="bnt-default">Enviar</button>
+                    <button id="enviar" class="btn btn-info">Enviar</button>
                 </div>
+
+
+
+            </div>
+
+            <div id="main-panel" class="col-md-6 col-md-offset-3 text-left" style="display:none;margin-top:20px">
+                <div id="count">
+
+                </div>
+
                 <div class="progress">
                     <div id="progressbar" class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
                     </div>
 
                 </div>
-
-
-            </div>
-
-            <div class="col-md-6 col-md-offset-3 text-left">
                 <div id="list-files" style="overflow: scroll;background-color:#3c3c3c;color:white;height:400px">
 
                 </div>
@@ -102,6 +107,10 @@
     $("#enviar").click(init);
 
     function init(){
+        $("#main-panel").show();
+        $("#list-files").html("");
+        $("#progressbar").css("width","0%");
+
         var last_response_len = false;
         var first = false;
         var tot;
@@ -132,6 +141,7 @@
                             else{
                                 c++;
 
+                                $("#count").text(c+" de "+tot);
                                 $("#progressbar").css("width",(c*(100/tot))+"%")
 
                                 $('#list-files').append('<div style="margin:2px">'+this_response+'</div>')

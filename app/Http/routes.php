@@ -21,6 +21,9 @@ Route::get('/', function () {
 
 
 Route::post('compress', function (Request $request) {
+    ini_set('max_execution_time', 3000);
+    \Tinify\setKey(env('TINY_API_KEY', ''));
+
 
     $validator = Validator::make($request->all(), [
         'path' => 'required'
