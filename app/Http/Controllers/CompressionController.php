@@ -2,26 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Util\FileUtils;
-use Illuminate\Http\Request;
-
 use App\Http\Requests;
+use App\Util\FileUtils;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Input;
-use Illuminate\Support\Facades\Validator;
 
 class CompressionController extends Controller
 {
+    use ValidatesRequests;
+
     public function compress(Request $request)
     {
         $this->initialSetup();
-        $validator = Validator::make($request->all(), [
-            'path' => 'required'
+        $this->validate($request, [
+            'path' => 'required',
         ]);
-
-        if ($validator->fails()) {
-            return new Response('Debe especificar el path de la carpeta de imágenes', 500);
-        }
 
         $path = Input::get('path');
         $path = $this->addFinalSlashToPath($path);
@@ -54,7 +51,10 @@ class CompressionController extends Controller
         elseif ($countFiles == 0)
             return new Response('La carpeta no contiene ninguna imagen', 500);
 
-        echo $countFiles;
+        echo json_encode([
+            'type' => 'total_file_count',
+            'data' => $countFiles,
+        ]);
     }
 
     private function initialSetup()

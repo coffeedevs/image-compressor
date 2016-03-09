@@ -10,14 +10,16 @@
     $("#enviar").click(init);
 
     function init() {
-        $("#main-panel").show();
+        $("#main-panel").css('visibility', 'visible');
         $("#list-files").html("");
-        $("#progressbar").css("width", "0%");
-        $("#count").text(" ");
+        var $progressBar = $("#progressbar");
+        $progressBar.css("width", "0%");
+        $progressBar.css('background-color', '#337ab7');
+        var $count = $("#count");
+        $count.text(" ");
         var last_response_len = false;
-        var first = false;
-        var tot;
-        var c = 0;
+        var totalFiles;
+        var currentIteration = 0;
         var path = $("#path").val();
         $.ajax('{{url('compress')}}', {
                     xhrFields: {
@@ -32,23 +34,21 @@
                                 this_response = response.substring(last_response_len);
                                 last_response_len = response.length;
                             }
+                            //this_response has the data for each stream output.
 
-                            if (!first) {
-                                tot = parseInt(this_response);
-                                first = true;
-                                console.log(tot);
+                            var data = JSON.parse(this_response);
+                            console.log(data);
+                            if (data.type == 'total_file_count') {
+                                totalFiles = parseInt(data.data);
+                                console.log(totalFiles);
                             }
                             else {
-                                c++;
-
-                                $("#count").text(c + " de " + tot);
-                                $("#progressbar").css("width", (c * (100 / tot)) + "%")
-
-                                $('#list-files').append('<div style="margin:2px">' + this_response + '</div>')
+                                currentIteration++;
+                                $count.text(currentIteration + " of " + totalFiles);
+                                $progressBar.css("width", (currentIteration * (100 / totalFiles)) + "%")
+                                $('#list-files').append('<div style="margin:2px">' + data.data + '</div>')
                                 console.log(this_response);
                             }
-
-
                         }
                     },
                     method: 'POST',
@@ -56,6 +56,9 @@
                 })
                 .done(function (data) {
                     console.log('Complete response = ' + data);
+                    $count.text('DONE!');
+                    $progressBar.css("background-color", "limegreen");
+
                 })
                 .fail(function (data) {
                     $.notify({

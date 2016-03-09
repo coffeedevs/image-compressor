@@ -28,28 +28,32 @@ class FileUtils
                         self::listDirectoriesForRoute($ruta . $file . "/");
                     } else {
                         $mime = File::mimeType($ruta . $file);
-                        if ($mime == 'image/png' || $mime == 'image/jpeg') {
+                        $originalSize = File::size($ruta . $file);
+                        usleep(600000);
+                        if (strcasecmp($mime, 'image/png') == 0) {
                             try {
                                 if (self::tinify) {
-                                    Storage::put('file.png', self::compress_with_tinify($ruta, $file));
+                                    self::compress_with_tinify($ruta, $file);
                                 } else {
-                                    Storage::put('file.png', self::compress_with_pngquant($ruta . $file));
+                                    self::compress_with_pngquant($ruta . $file);
                                 }
-                                echo $ruta . $file . ' <span style="color:#00cc00">OK</span>';
-                                flush();
-                                ob_flush();
-                                //usleep(100000);
-                                sleep(5);
+                                $newSize = File::size($ruta . $file);
+                                $compressRatio = $originalSize * 100 / $newSize;
+                                self::echoFileInformation($ruta, $file, '<span style="color:green"> ' . $compressRatio . '% OK</span>');
                             } catch (\Exception $ex) {
-                                //echo $ruta . $file;
-                                echo $ex->getMessage();
-                                //echo $ruta . $file . ' <span style="color:red">FAIL</span>';
-                                flush();
-                                ob_flush();
-                                usleep(100000);
+                                self::echoFileInformation($ruta, $file, '<span style="color:red">FAIL</span>');
+                            }
+                        } else if (strcasecmp($mime, 'image/jpg') == 0 || (strcasecmp($mime, 'image/jpeg') == 0)) {
+                            try {
+                                self::compress_with_jpegtran($ruta . $file);
+                                $newSize = File::size($ruta . $file);
+                                $compressRatio = $originalSize * 100 / $newSize;
+                                self::echoFileInformation($ruta, $file, '<span style="color:green"> ' . $compressRatio . '% OK</span>');
+                            } catch (\Exception $ex) {
+                                self::echoFileInformation($ruta, $file, '<span style="color:red">FAIL</span><br>' . $ex->getMessage());
+                                //self::echoFileInformation($ruta, $file, '<span style="color:red">FAIL</span>');
                             }
                         }
-                        //TODO else
                     }
                 }
                 closedir($dh);
@@ -68,7 +72,7 @@ class FileUtils
                         $i += self::imageFilesTotal($ruta . $file . "/");
                     } else {
                         $mime = File::mimeType($ruta . $file);
-                        if ($mime == 'image/png' || $mime == 'image/jpeg') {
+                        if (strcasecmp($mime, 'image/png') == 0 || (strcasecmp($mime, 'image/jpg') == 0) || (strcasecmp($mime, 'image/jpeg') == 0)) {
                             $i++;
                         }
                     }
@@ -104,24 +108,42 @@ class FileUtils
      * @return string - content of PNG file after conversion
      * @throws Exception
      */
-    private static function compress_with_pngquant($path_to_png_file, $max_quality = 90)
+    private static function compress_with_pngquant($path_to_png_file)
     {
         if (!file_exists($path_to_png_file)) {
             throw new Exception("File does not exist: $path_to_png_file");
         }
 
-        // guarantee that quality won't be worse than that.
-        $min_quality = 60;
-        // '-' makes it use stdout, required to save to $compressed_png_content variable
-        // '<' makes it read from the given file path
-        // escapeshellarg() makes this safe to use with any path
-        //$compressed_png_content = shell_exec("pngquant --quality=$min_quality-$max_quality - < " . escapeshellarg($path_to_png_file));
-        //$compressed_png_content = exec("pngquant '$path_to_png_file'");
+        $compressed_png_content = shell_exec("pngquant --force --ext .png " . escapeshellarg($path_to_png_file));
 
-        $compressed_png_content = shell_exec("pngquant --quality=$min_quality-$max_quality - < " . escapeshellarg($path_to_png_file) . " --ext .png --force ");
-        if ($compressed_png_content === null) {
-            throw new Exception("Conversion to compressed PNG failed . Is pngquant 1.8 + installed on the server ? ");
-        }
         return $compressed_png_content;
+    }
+
+    private static function echoFileInformation($route, $file, $status)
+    {
+        echo json_encode([
+            'type' => 'compression_status',
+            'data' => $route . $file . $status,
+        ]);
+        self::flush();
+    }
+
+    private static function flush()
+    {
+        flush();
+        ob_flush();
+    }
+
+    private static function compress_with_jpegtran($path_to_jpeg_file)
+    {
+        if (!file_exists($path_to_jpeg_file)) {
+            throw new Exception("File does not exist: $path_to_jpeg_file");
+        }
+
+        $compressed_jpeg_file = system("jpegtran -copy none -optimize -outfile " . escapeshellarg($path_to_jpeg_file)) . " " . escapeshellarg($path_to_jpeg_file);
+        if ($compressed_jpeg_file === null) {
+            throw new Exception("Conversion to compressed JPEG failed.");
+        }
+        return $compressed_jpeg_file;
     }
 }
